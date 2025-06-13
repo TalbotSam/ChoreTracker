@@ -6,7 +6,7 @@ body {
     }
 
     h1, h2 {
-    color: #9c1c3a;
+    color: blue;
     }
 
     ul {
@@ -25,10 +25,32 @@ body {
     }
 
     button {
-    background-color: #9c1c3a;
+    background-color: black;
     color: white;
     border: none;
     padding: 0.5rem;
     border-radius: 4px;
     cursor: pointer;
     }
+
+    .overdue {
+  background-color: #ffe5e5;
+  border-left: 6px solid #dc3545;
+}
+
+.due {
+  background-color: #fff8e1;
+  border-left: 6px solid #ffc107;
+}
+
+.upcoming {
+  background-color: #e0f7fa;
+  border-left: 6px solid #17a2b8;
+}
+
+li {
+  margin-bottom: 8px;
+  padding: 10px;
+  border-radius: 4px;
+}
+

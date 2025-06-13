@@ -1,58 +1,67 @@
-// Dummy chores for now
-const chores = [
-    {
-        id: 1,
-        name: "Change cat litter",
-        frequencyDays: 5,
-        lastDone: "2025-06-08"
-    },
-    {
-        id: 2,
-        name: "Change bed sheets",
-        frequencyDays: 14,
-        lastDone: "2025-06-01"
-    },
-    ];
+const API_URL = 'https://choretracker-api.onrender.com';
 
-    function daysSince(dateStr) {
-        const last = new Date(dateStr);
-        const now = new Date();
-        return Math.floor((now - last) / (1000 * 60 * 60 * 24));
-    }
+async function fetchChores() {
+  const response = await fetch(`${API_URL}/chores`);
+  const chores = await response.json();
+  renderChores(chores);
+}
 
-    function getNextDue(chore) {
-        return new Date(new Date(chore.lastDone).getTime() + chore.frequencyDays * 86400000);
-    }
+function calculateStatus(chore) {
+  const lastDone = new Date(chore.last_done);
+  const today = new Date();
+  const nextDue = new Date(lastDone);
+  nextDue.setDate(lastDone.getDate() + chore.frequency_days);
 
-    function render() {
-        const todayList = document.getElementById("today-list");
-        const upcomingList = document.getElementById("upcoming-list");
-        const allList = document.getElementById("all-list");
+  const timeDiff = nextDue - today;
+  const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
 
-    chores.forEach(chore => {
-        const nextDue = getNextDue(chore);
-        const daysLeft = daysSince(chore.lastDone) - chore.frequencyDays;
+  if (daysLeft < 0) return { status: 'overdue', days: Math.abs(daysLeft) };
+  if (daysLeft === 0) return { status: 'due', days: 0 };
+  return { status: 'upcoming', days: daysLeft };
+}
 
-        const li = document.createElement("li");
+function renderChores(chores) {
+  const todayList = document.getElementById("today-list");
+  const upcomingList = document.getElementById("upcoming-list");
+  const allList = document.getElementById("all-list");
+
+  todayList.innerHTML = '';
+  upcomingList.innerHTML = '';
+  allList.innerHTML = '';
+
+  chores.forEach(chore => {
+    const { status, days } = calculateStatus(chore);
+
+    const li = document.createElement("li");
+    li.className = `list-group-item ${status}`;
+    let statusText = '';
+
+    if (status === 'overdue') statusText = `Overdue by ${days} day${days !== 1 ? 's' : ''}`;
+    else if (status === 'due') statusText = `Due today`;
+    else statusText = `Due in ${days} day${days !== 1 ? 's' : ''}`;
+
     li.innerHTML = `
-        <span>${chore.name} (Due: ${nextDue.toDateString()})</span>
-        <button onclick="markDone(${chore.id})">Mark Done</button>
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <strong>${chore.name}</strong><br/>
+          <small class="text-muted">${statusText}</small>
+        </div>
+        <button class="btn btn-sm btn-outline-success" onclick="markDone(${chore.id})">Mark Done</button>
+      </div>
     `;
 
-        allList.appendChild(li);
-
-        if (daysLeft >= 0) {
-            todayList.appendChild(li.cloneNode(true));
-    } else if (daysLeft >= -2) {
-        upcomingList.appendChild(li.cloneNode(true));
+    allList.appendChild(li.cloneNode(true));
+    if (status === 'overdue' || status === 'due') {
+      todayList.appendChild(li.cloneNode(true));
+    } else {
+      upcomingList.appendChild(li.cloneNode(true));
     }
-    });
-    }
+  });
+}
 
-    function markDone(id) {
-        const chore = chores.find(c => c.id === id);
-        chore.lastDone = new Date().toISOString().split("T")[0];
-    location.reload(); // quick hack for demo
-    }
+async function markDone(id) {
+  await fetch(`${API_URL}/chores/${id}/mark-done`, { method: 'POST' });
+  fetchChores(); // refresh display
+}
 
-render();
+fetchChores();
